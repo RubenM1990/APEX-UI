@@ -274,7 +274,7 @@ export default function ApexWorld() {
       {/* background waves - the app's WebGL shader at the app's opacity */}
       {!reduced && (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-          <ApexBackdrop opacity={0.12} active={orbState === "speaking"} />
+          <ApexBackdrop opacity={0.5} active={orbState === "speaking"} />
         </div>
       )}
 

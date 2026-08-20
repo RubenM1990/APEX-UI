@@ -33,8 +33,13 @@ export default function ApexBackdrop({ opacity = 0.12, active = false }: { opaci
     };
     resize();
     window.addEventListener("resize", resize);
+    // Re-measure whenever the canvas box changes — covers the case where the
+    // parent has no size yet at mount (canvas would otherwise stay 0×0 and
+    // never redraw until a window resize).
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
 
-    const LINES = 18;
+    const LINES = 20;
     const start = performance.now();
 
     const draw = (now: number) => {
@@ -59,7 +64,7 @@ export default function ApexBackdrop({ opacity = 0.12, active = false }: { opaci
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = `rgba(90, 210, 255, ${(0.1 + p * 0.16) * boost})`;
+        ctx.strokeStyle = `rgba(90, 210, 255, ${(0.14 + p * 0.2) * boost})`;
         ctx.lineWidth = 1;
         ctx.stroke();
       }
@@ -70,6 +75,7 @@ export default function ApexBackdrop({ opacity = 0.12, active = false }: { opaci
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      ro.disconnect();
     };
   }, []);
 

@@ -1,0 +1,151 @@
+/* Apex orb animations - copied from apex-frontend/src/index.css (orb-relevant subset). */
+
+/* The r3f canvas must always fill the stage (its drawing buffer is synced by fiber
+   on the first animation frame; this guarantees the display size meanwhile). */
+[data-apex-stage] canvas { width: 100% !important; height: 100% !important; }
+
+/* ── Waveform bars ── */
+@keyframes waveBar {
+  0%, 100% { transform: scaleY(0.3); opacity: 0.5; }
+  50%       { transform: scaleY(1);   opacity: 1; }
+}
+.wavebar   { transform-box: fill-box; transform-origin: center; animation: waveBar 0.8s ease-in-out infinite; }
+.wavebar-0 { animation-delay: 0.00s; }
+.wavebar-1 { animation-delay: 0.11s; }
+.wavebar-2 { animation-delay: 0.22s; }
+.wavebar-3 { animation-delay: 0.33s; }
+.wavebar-4 { animation-delay: 0.44s; }
+.wavebar-5 { animation-delay: 0.55s; }
+.wavebar-6 { animation-delay: 0.66s; }
+
+/* Dot blink */
+@keyframes dotBlink { 0%,100%{opacity:0.2} 50%{opacity:1} }
+.orb-dot-blink { animation: dotBlink 1.2s ease-in-out infinite; }
+.blink-0 { animation-delay: 0s; }
+.blink-1 { animation-delay: 0.4s; }
+.blink-2 { animation-delay: 0.8s; }
+
+/* ── Sound waves - always on ── */
+@keyframes soundWave {
+  0%   { r: 155; opacity: 0.18; stroke-width: 0.8; }
+  60%  { opacity: 0.06; }
+  100% { r: 230; opacity: 0; stroke-width: 0.3; }
+}
+@keyframes soundWaveActive {
+  0%   { r: 155; opacity: 0.55; stroke-width: 1.5; }
+  60%  { opacity: 0.2; }
+  100% { r: 245; opacity: 0; stroke-width: 0.5; }
+}
+.sound-wave { animation: soundWave 3.5s ease-out infinite; }
+.wave-0 { animation-delay: 0s; }
+.wave-1 { animation-delay: 0.9s; }
+.wave-2 { animation-delay: 1.8s; }
+.wave-3 { animation-delay: 2.7s; }
+
+.apex-orb-wrap[data-state="speaking"] .sound-wave,
+.apex-orb-wrap[data-state="thinking"] .sound-wave {
+  animation-name: soundWaveActive;
+  animation-duration: 2s;
+}
+
+/* Ring breathe - always */
+@keyframes ringBreathe {
+  0%,100% { opacity: 0.9; }
+  50%      { opacity: 1; }
+}
+.orb-ring-breathe { animation: ringBreathe 3s ease-in-out infinite; }
+.orb-ring-glow    { animation: ringBreathe 3s ease-in-out infinite; }
+.orb-ring-bright  { animation: ringBreathe 2s ease-in-out infinite; }
+
+/* Center ring slow pulse */
+@keyframes centerRingPulse {
+  0%,100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+.orb-center-ring { animation: centerRingPulse 2.5s ease-in-out infinite; }
+
+/* ── Apex Orb Animations ── */
+@keyframes orbRotateCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes orbRotateCCW {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+@keyframes orbPulse {
+  0%, 100% { opacity: 0.7; r: 48; }
+  50%       { opacity: 1;   r: 52; }
+}
+@keyframes orbPulseFast {
+  0%, 100% { opacity: 0.8; r: 46; }
+  50%       { opacity: 1;   r: 54; }
+}
+@keyframes orbCenterBlink {
+  0%, 100% { opacity: 0.9; }
+  50%       { opacity: 1; }
+}
+@keyframes orbAmbient {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50%       { opacity: 0.25; transform: scale(1.05); }
+}
+
+/* Orb ring classes */
+.orb-ring-slow  { transform-origin: 140px 140px; animation: orbRotateCW  18s linear infinite; }
+.orb-ring-medium{ transform-origin: 140px 140px; animation: orbRotateCCW 12s linear infinite; }
+.orb-ring-fast  { transform-origin: 140px 140px; animation: orbRotateCW   7s linear infinite; }
+.orb-orbit-cw   { transform-origin: 140px 140px; animation: orbRotateCW   5s linear infinite; }
+.orb-orbit-ccw  { transform-origin: 140px 140px; animation: orbRotateCCW  3s linear infinite; }
+
+.orb-core-pulse { animation: orbPulse 3s ease-in-out infinite; }
+.orb-center     { animation: orbCenterBlink 2s ease-in-out infinite; }
+.orb-ambient    { transform-origin: 140px 140px; animation: orbAmbient 4s ease-in-out infinite; }
+
+/* ── Orb listening state ── */
+@keyframes listeningGrow {
+  0%   { transform: scale(1.0); }
+  25%  { transform: scale(1.2); }
+  62%  { transform: scale(1.15); }
+  100% { transform: scale(1.2); }
+}
+@keyframes listeningPulse {
+  0%,100% { transform: scale(1.2); }
+  50%     { transform: scale(1.14); }
+}
+@keyframes listeningRing {
+  0%   { r: 155; opacity: 0.7; stroke-width: 2; }
+  60%  { opacity: 0.25; }
+  100% { r: 280; opacity: 0; stroke-width: 0.5; }
+}
+.apex-orb-wrap[data-state="listening"] {
+  animation: listeningGrow 1s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+             listeningPulse 2.4s ease-in-out 1s infinite;
+  transform-origin: center;
+}
+.apex-orb-wrap[data-state="listening"] .sound-wave {
+  animation-name: listeningRing;
+  animation-duration: 1.6s;
+}
+.apex-orb-wrap[data-state="listening"] .orb-ring-breathe {
+  animation: ringBreathe 1s ease-in-out infinite;
+}
+.apex-orb-wrap[data-state="listening"] .orb-ring-glow {
+  animation: ringBreathe 0.8s ease-in-out infinite;
+}
+
+/* ── Faster pulse when thinking */
+.apex-orb-wrap[data-state="thinking"] .orb-core-pulse {
+  animation: orbPulseFast 1s ease-in-out infinite;
+}
+.apex-orb-wrap[data-state="thinking"] .orb-ring-slow {
+  animation-duration: 6s;
+}
+.apex-orb-wrap[data-state="thinking"] .orb-ring-medium {
+  animation-duration: 4s;
+}
+
+/* Bigger glow when speaking */
+.apex-orb-wrap[data-state="speaking"] .orb-ambient {
+  animation: orbAmbient 1s ease-in-out infinite;
+  opacity: 0.35;
+}

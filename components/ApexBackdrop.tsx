@@ -3,12 +3,15 @@
 import { useEffect, useRef } from "react";
 
 /**
- * ApexBackdrop — an original, dependency-free animated backdrop of drifting
- * wave lines. Written from scratch for this open-source release (MIT), it
- * replaces the previous WebGL shader. Renders on a 2D canvas; `active`
- * brightens and lifts the waves (driven by the orb's "speaking" state).
+ * ApexBackdrop — an original, dependency-free animated backdrop of warped,
+ * flowing wave lines. Written from scratch for this open-source release (MIT);
+ * it replaces the previous WebGL shader.
+ *
+ * `active` (driven by the orb's tap state) makes the whole field **accelerate**
+ * and brighten, so the backdrop moves with the particle core instead of
+ * ignoring it. The speed eases in/out rather than snapping.
  */
-export default function ApexBackdrop({ opacity = 0.12, active = false }: { opacity?: number; active?: boolean }) {
+export default function ApexBackdrop({ opacity = 0.5, active = false }: { opacity?: number; active?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -33,39 +36,46 @@ export default function ApexBackdrop({ opacity = 0.12, active = false }: { opaci
     };
     resize();
     window.addEventListener("resize", resize);
-    // Re-measure whenever the canvas box changes — covers the case where the
-    // parent has no size yet at mount (canvas would otherwise stay 0×0 and
-    // never redraw until a window resize).
+    // Re-measure whenever the canvas box changes (covers a 0×0 measure at mount).
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    const LINES = 20;
-    const start = performance.now();
+    const LINES = 26;
+    let phase = 0; // accumulates faster when active — the "moves with the particles" part
+    let speed = 1; // eased current speed
+    let last = performance.now();
 
     const draw = (now: number) => {
-      const t = (now - start) / 1000;
-      const boost = activeRef.current ? 1.5 : 1;
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      // Accelerate toward the target speed when the orb is engaged; ease back down.
+      const target = activeRef.current ? 3.0 : 1.0;
+      speed += (target - speed) * 0.06;
+      phase += dt * speed;
+
+      const glow = activeRef.current ? 1.4 : 1;
       ctx.clearRect(0, 0, w, h);
 
       for (let i = 0; i < LINES; i++) {
         const p = i / (LINES - 1);
-        const baseY = h * (0.14 + p * 0.72);
-        const amp = (10 + p * 34) * boost;
-        const speed = 0.25 + p * 0.35;
-        const freq = 0.6 + p * 0.5;
+        const baseY = h * (0.08 + p * 0.84);
+        const amp = 14 + p * 46;
+        const freq = 0.5 + p * 0.7;
+        const wavePhase = phase * (0.6 + p * 0.5) + p * 6.283;
 
         ctx.beginPath();
-        for (let x = 0; x <= w; x += 8) {
+        for (let x = 0; x <= w; x += 6) {
           const nx = x / Math.max(w, 1);
-          const y =
-            baseY +
-            Math.sin(nx * Math.PI * 2 * freq + t * speed) * amp +
-            Math.sin(nx * Math.PI * 4 + t * speed * 0.6) * amp * 0.3;
+          // A long, slow warp bends the whole line so the field curves and
+          // swirls instead of running flat; a faster wave rides on top.
+          const warp = Math.sin(nx * Math.PI * 1.3 + phase * 0.4 + p * 2) * amp * 0.9;
+          const y = baseY + Math.sin(nx * Math.PI * 2 * freq + wavePhase) * amp * 0.55 + warp;
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = `rgba(90, 210, 255, ${(0.14 + p * 0.2) * boost})`;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = `rgba(80, 200, 255, ${(0.12 + p * 0.22) * glow})`;
+        ctx.lineWidth = 0.6 + p * 0.9;
         ctx.stroke();
       }
       raf = requestAnimationFrame(draw);

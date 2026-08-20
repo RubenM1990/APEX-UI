@@ -30,7 +30,7 @@ const TILES: Tile[] = [
 
 function Clock() {
   const [now, setNow] = useState<Date | null>(null);
-  const [wx, setWx] = useState<{ temperature_2m: number; weather_code: number } | null>(null);
+  const [wx, setWx] = useState<{ temperature_2m: number; weather_code: number; city: string } | null>(null);
 
   useEffect(() => {
     setNow(new Date());
@@ -40,11 +40,12 @@ function Clock() {
 
   useEffect(() => {
     let ok = true;
-    // Via our own API route, so open-meteo never sees visitor IPs.
+    // Via our own API route, so open-meteo never sees visitor IPs. The route
+    // returns the visitor's own city + weather (Vercel geo headers).
     const load = () =>
       fetch("/api/weather")
         .then((r) => r.json())
-        .then((d) => { if (ok && d.current) setWx(d.current); })
+        .then((d) => { if (ok && d.current) setWx({ ...d.current, city: d.city || "" }); })
         .catch(() => {});
     load();
     const id = setInterval(load, 1200000);
@@ -65,7 +66,7 @@ function Clock() {
         <div>
           <div style={{ fontSize: 22, fontWeight: 300, color: `${ACCENT}e6` }}>{Math.round(wx.temperature_2m)}°C</div>
           <div style={{ fontSize: 9.5, letterSpacing: "0.12em", color: "rgba(240,237,232,0.5)", marginTop: 2, textTransform: "uppercase" }}>
-            TEL AVIV · {(WCODE[wx.weather_code] || "").toUpperCase()}
+            {(wx.city || "").toUpperCase()}{wx.city ? " · " : ""}{(WCODE[wx.weather_code] || "").toUpperCase()}
           </div>
         </div>
       )}

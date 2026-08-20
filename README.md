@@ -41,7 +41,7 @@ Then `npm run build` for a production build, or deploy to Vercel in one click.
 ## Customise
 
 - **Social links** → edit `TILES` in `components/ApexOverviewPanel.tsx`.
-- **Weather city** → change `LAT` / `LON` in `app/api/weather/route.ts`.
+- **Weather** → auto-detects the **visitor's** city on Vercel (geo headers); edit `FALLBACK` in `app/api/weather/route.ts` to change the off-Vercel / localhost default.
 - **Agents & copy** → the `ROSTER` and `INFO` maps in `components/ApexWorld.tsx`.
 - **Backdrop** → the shader in `components/ShaderBackground.jsx`; its opacity/tint are set where `<ShaderBackground>` is used in `ApexWorld.tsx`.
 

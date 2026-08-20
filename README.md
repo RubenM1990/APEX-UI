@@ -4,10 +4,11 @@ An animated **autonomous-agent orb + reasoning-graph** interface — the front-e
 [Apex](https://reznikov-engineering.com/apex), released open source.
 
 Tap the orb to cycle its state (idle → thinking → speaking); the reasoning web reacts,
-agent nodes orbit the core, and clicking any node opens an overview card. The ring, the
-agent graph and the backdrop are **hand-written SVG / Canvas 2D / CSS**; the cyan particle
-core is a small `react-three-fiber` scene (skipped under `prefers-reduced-motion`). **No
-paid assets, no borrowed shaders.**
+agent nodes orbit the core, and clicking any node opens an overview card. The orb ring,
+agent graph and status bar are **hand-written SVG / CSS**; the cyan particle core is a
+small `react-three-fiber` scene (skipped under `prefers-reduced-motion`); and the WebGL
+shader backdrop + the overview lamp panel are **MIT community components from
+[21st.dev](https://21st.dev/community/components)** (see [CREDITS](./CREDITS.md)).
 
 > Built with Next.js 15 + React 19. Runtime deps: `lucide-react` (icons) and
 > `three` / `@react-three/fiber` / `@react-three/postprocessing` (the particle core) —
@@ -32,7 +33,7 @@ Then `npm run build` for a production build, or deploy to Vercel in one click.
 | `ApexHeroOrb` | Stacks the SVG ring + the particle core, scaled to fit |
 | `ReasoningWeb` | The agent constellation — circuit traces, orbit rings, 18-node roster |
 | `OrbStatusBar` | The equalizer + STANDBY cluster along the bottom |
-| `ApexBackdrop` | An original animated wave backdrop on a 2D canvas |
+| `ShaderBackground` | Animated WebGL "plasma waves" backdrop (MIT component from 21st.dev — see CREDITS) |
 | `ApexWorld` | Composes the above; owns the tap-state cycle and the agent overview cards |
 | `ApexOverviewPanel` | Top-left HUD: live clock, weather, and social links |
 | `app/api/weather` | Keyless [open-meteo](https://open-meteo.com) proxy for the panel's weather |
@@ -42,7 +43,7 @@ Then `npm run build` for a production build, or deploy to Vercel in one click.
 - **Social links** → edit `TILES` in `components/ApexOverviewPanel.tsx`.
 - **Weather city** → change `LAT` / `LON` in `app/api/weather/route.ts`.
 - **Agents & copy** → the `ROSTER` and `INFO` maps in `components/ApexWorld.tsx`.
-- **Backdrop** → tweak `components/ApexBackdrop.tsx` (line count, colour, amplitude).
+- **Backdrop** → the shader in `components/ShaderBackground.jsx`; its opacity/tint are set where `<ShaderBackground>` is used in `ApexWorld.tsx`.
 
 ## Accessibility
 

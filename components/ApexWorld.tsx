@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from "react";
 import ApexHeroOrb, { type OrbState } from "./ApexHeroOrb";
 import ReasoningWebJs from "./ReasoningWeb";
-import ApexBackdrop from "./ApexBackdrop";
+import ShaderBackgroundJs from "./ShaderBackground";
 import OrbStatusBar from "./OrbStatusBar";
 
 export type NodeSel = { name: string; key: string; color: string };
@@ -22,6 +22,9 @@ export type NodeSel = { name: string; key: string; color: string };
 const ReasoningWeb = ReasoningWebJs as unknown as React.ComponentType<{
   state?: string; trace?: unknown; mode?: string; coreless?: boolean;
   onSelect?: (n: NodeSel) => void; light?: boolean;
+}>;
+const ShaderBackground = ShaderBackgroundJs as unknown as React.ComponentType<{
+  opacity?: number; voiceActive?: boolean; gold?: boolean;
 }>;
 type AgentInfo = {
   role: string;
@@ -274,7 +277,7 @@ export default function ApexWorld() {
       {/* background waves - the app's WebGL shader at the app's opacity */}
       {!reduced && (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-          <ApexBackdrop opacity={0.5} active={orbState !== "idle"} />
+          <ShaderBackground opacity={0.12} voiceActive={orbState === "speaking"} gold={false} />
         </div>
       )}
 

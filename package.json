@@ -4,28 +4,67 @@
   "description": "An animated autonomous-agent orb + reasoning-graph UI. Hand-written SVG/CSS, no 3D libraries.",
   "license": "MIT",
   "private": false,
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "desktop:dev": "set APEX_DESKTOP_DEV_URL=http://127.0.0.1:3000&& electron .",
+    "desktop:prepare": "node scripts/prepare-desktop.mjs",
+    "desktop:build": "npm run build && npm run desktop:prepare && electron-builder --win nsis --publish never"
   },
   "dependencies": {
-    "next": "15.3.8",
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/postprocessing": "^3.0.4",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^0.511.0",
+    "mammoth": "^1.13.0",
+    "next": "^15.5.27",
+    "pdf-parse": "^2.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "lucide-react": "^0.511.0",
-    "three": "^0.184.0",
-    "@react-three/fiber": "^9.6.1",
-    "@react-three/postprocessing": "^3.0.4"
+    "three": "^0.184.0"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.184.1",
+    "electron": "^40.0.0",
+    "electron-builder": "^26.0.12",
     "eslint": "^9",
-    "eslint-config-next": "15.3.3"
+    "eslint-config-next": "15.3.3",
+    "typescript": "^5"
+  },
+  "build": {
+    "appId": "com.reznikove.apex",
+    "productName": "Apex",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "publish": [],
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "app-server"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "allowScripts": {
+    "electron@40.10.6": true,
+    "electron-winstaller@5.4.0": true
   }
 }

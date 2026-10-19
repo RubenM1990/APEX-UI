@@ -22,7 +22,7 @@ import { useEffect, useRef } from 'react'
 const NS = 'http://www.w3.org/2000/svg'
 const AX_DEFAULT = 340, AY_DEFAULT = 240   // exact viewBox centre = the orb's world-origin anchor (where the 3D particle
                            // ball is centred), so the spoke hub originates from the particle cluster's centre
-const COL = { consultant: '#00e5ff', doer: '#f5a623', tool: '#7f9bb3' }
+const COL = { consultant: '#00e5ff', doer: '#f5a623', tool: '#7f9bb3', folder: '#a5f3fc' }
 
 // Right side re-spaced into a clean vertical ladder (drive→finance→editor→memory→email→design)
 // so no label collides with a neighbouring circle. Left/bottom unchanged.
@@ -55,7 +55,7 @@ function nodeIdFromHelper(h) {
   return ({ create_visual: 'design', render_visual: 'design', visual: 'design' })[s] || s   // a visual lights Design
 }
 
-export default function ReasoningWeb({ state = 'standby', trace = null, mode = 'full', coreless = false, onSelect = null, light = false, roster = null, anchor = null, viewBox = null, traces = true }) {
+export default function ReasoningWeb({ state = 'standby', trace = null, mode = 'full', coreless = false, onSelect = null, light = false, roster = null, extraNodes = [], anchor = null, viewBox = null, traces = true }) {
   const svgRef = useRef(null)
   const apiRef = useRef(null)
   const stateRef = useRef(state)
@@ -67,19 +67,19 @@ export default function ReasoningWeb({ state = 'standby', trace = null, mode = '
     if (!svg || apiRef.current) return
     const AX = anchor ? anchor[0] : AX_DEFAULT
     const AY = anchor ? anchor[1] : AY_DEFAULT
-    const NODES = roster || ROSTER
+    const NODES = roster || [...ROSTER, ...extraNodes]
     // Day-mode palette (P5) — every structural color routes through P so the web is legible on the
     // light paper bg (labels were white-on-light = invisible). Remounted via key={theme} upstream.
     const P = light ? {
       ring: '#93a9bb', pcb: '#5d7f97', pcbDot: '#0e7490', fieldMesh: '#9db1c0', fieldDot: '#0e7490',
       mesh: '#8ba2b4', spoke: '#46708e', spokeHot: '#0891b2', link: '#0d9488',
       label: '#1f2d3a', labelMinor: '#55677a', labelDorm: '#8a99a8', mote: '#0aa9c8', moteHot: '#067a96',
-      col: { consultant: '#067a96', doer: '#b26d05', tool: '#64748b' },
+      col: { consultant: '#067a96', doer: '#b26d05', tool: '#64748b', folder: '#087e9a' },
     } : {
       ring: '#1b5f78', pcb: '#1c5f7a', pcbDot: '#37d6ef', fieldMesh: '#143f4f', fieldDot: '#2bd0e6',
       mesh: '#1a5468', spoke: '#22566b', spokeHot: '#33eaff', link: '#5eead4',
       label: '#dfeaf3', labelMinor: '#93a8ba', labelDorm: '#546a7d', mote: '#5fe0f2', moteHot: '#bff6ff',
-      col: { consultant: '#00e5ff', doer: '#f5a623', tool: '#7f9bb3' },
+      col: { consultant: '#00e5ff', doer: '#f5a623', tool: '#7f9bb3', folder: '#a5f3fc' },
     }
     const mk = (t, a = {}) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e }
     const defs = mk('defs')
@@ -146,7 +146,7 @@ export default function ReasoningWeb({ state = 'standby', trace = null, mode = '
         fillG.append(c)
       })
       const map = {}, pts = []
-      NODES.forEach((r) => { const n = { id: r[0], label: r[1], layer: r[2], x: r[3], y: r[4], live: r[5], bend: r[6], r: r[7], col: P.col[r[2]] || COL[r[2]] }; map[r[0]] = n; pts.push(n) })
+      NODES.forEach((r) => { const n = { id: r[0], label: r[1], layer: r[2], x: r[3], y: r[4], live: r[5], bend: r[6], r: r[7], col: P.col[r[2]] || COL[r[2]], isFolder: r[0].startsWith('folder:') }; map[r[0]] = n; pts.push(n) })
       // Keep a clear moat around the centre so no node sits ON the orb — push the inner ring out.
       const MINR = 128
       pts.forEach((n) => { const dx = n.x - AX, dy = n.y - AY, d = Math.hypot(dx, dy) || 1; if (d < MINR) { n.x = AX + dx / d * MINR; n.y = AY + dy / d * MINR } })
@@ -171,13 +171,13 @@ export default function ReasoningWeb({ state = 'standby', trace = null, mode = '
         const above = uy > 0.82
         // Visual hierarchy (UI sweep): tool dorms + unbuilt nodes must not carry the same label weight
         // as live AGENTS — a dashed "Drive" reading as big as "Design" was misleading the map.
-        const minor = !n.live || n.layer === 'tool'
+        const minor = !n.live || n.layer === 'tool' || n.isFolder
         const t = mk('text', {
-          x: above ? n.x : n.x + ux * off,
-          y: above ? n.y - (rr + 9) : n.y + uy * off + (Math.abs(uy) < 0.3 ? 4 : 0),
-          'text-anchor': above ? 'middle' : (ux > 0.3 ? 'start' : (ux < -0.3 ? 'end' : 'middle')),
+          x: n.isFolder ? n.x : (above ? n.x : n.x + ux * off),
+          y: n.isFolder ? (uy > 0 ? n.y - rr - 10 : n.y + rr + 14) : (above ? n.y - (rr + 9) : n.y + uy * off + (Math.abs(uy) < 0.3 ? 4 : 0)),
+          'text-anchor': n.isFolder || above ? 'middle' : (ux > 0.3 ? 'start' : (ux < -0.3 ? 'end' : 'middle')),
           'font-size': minor ? 9.5 : 12, 'font-family': 'inherit',
-          fill: !n.live ? P.labelDorm : (minor ? P.labelMinor : P.label),
+          fill: !n.live ? P.labelDorm : (n.isFolder ? n.col : (minor ? P.labelMinor : P.label)),
           opacity: !n.live ? 0.75 : 1 })
         t.textContent = n.label
         nodesG.append(t)
@@ -299,7 +299,7 @@ export default function ReasoningWeb({ state = 'standby', trace = null, mode = '
     }
     raf = requestAnimationFrame(loop)
     return () => { cancelAnimationFrame(raf); apiRef.current = null; svg.replaceChildren() }
-  }, [mode, coreless, roster, anchor, viewBox, traces])
+  }, [mode, coreless, roster, extraNodes, anchor, viewBox, traces])
 
   useEffect(() => {
     if (!trace || !apiRef.current) return

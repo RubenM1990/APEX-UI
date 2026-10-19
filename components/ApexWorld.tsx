@@ -22,6 +22,7 @@ export type NodeSel = { name: string; key: string; color: string };
 const ReasoningWeb = ReasoningWebJs as unknown as React.ComponentType<{
   state?: string; trace?: unknown; mode?: string; coreless?: boolean;
   onSelect?: (n: NodeSel) => void; light?: boolean;
+  extraNodes?: Array<[string, string, string, number, number, boolean, number, number]>;
 }>;
 const ShaderBackground = ShaderBackgroundJs as unknown as React.ComponentType<{
   opacity?: number; voiceActive?: boolean; gold?: boolean;
@@ -32,6 +33,20 @@ type AgentInfo = {
   asks?: string[];
   status: "online" | "standby" | "integration";
 };
+type MatrixFolder = { id: string; name: string };
+const MATRIX_FOLDER_NODES: Array<[string, string, string, number, number, boolean, number, number]> = [
+  ["folder:onedrive", "OneDrive", "folder", 45, 185, true, -5, 7],
+  ["folder:desktop", "Desktop", "folder", 45, 300, true, -5, 7],
+  ["folder:downloads", "Downloads", "folder", 635, 185, true, 5, 7],
+  ["folder:documents", "Documents", "folder", 635, 325, true, 5, 7],
+  ["folder:church", "Church(copy)", "folder", 75, 420, true, -5, 7],
+  ["folder:noss", "NOSS", "folder", 600, 420, true, 5, 7],
+  ["folder:kc", "KC", "folder", 340, 50, true, 0, 7],
+];
+const MATRIX_FOLDERS: MatrixFolder[] = MATRIX_FOLDER_NODES.map(([key, name]) => ({
+  id: key.slice("folder:".length),
+  name,
+}));
 
 /* Mirrors the ROSTER in ReasoningWeb.jsx (a verbatim copy from the Apex app, so
    it is not edited here). Backs the visually-hidden agent list that gives the
@@ -228,9 +243,50 @@ export function AgentOverview({ sel, onClose }: { sel: NodeSel; onClose: () => v
   );
 }
 
+function FolderNodeOverview({ folder, desktop, onOpen, onClose }: {
+  folder: MatrixFolder;
+  desktop: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div role="dialog" aria-modal="true" aria-label={`${folder.name} folder`} style={{
+      position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+      width: "min(340px, calc(100vw - 28px))", zIndex: 70,
+      background: "rgba(3,10,19,.98)", border: "1px solid rgba(165,243,252,.42)",
+      borderRadius: 14, boxShadow: "0 16px 48px rgba(0,0,0,.65)", color: "#f0ede8",
+      fontFamily: "system-ui, sans-serif",
+    }}>
+      <header style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 15px", borderBottom: "1px solid rgba(165,243,252,.16)" }}>
+        <span aria-hidden="true" style={{ color: "#a5f3fc" }}>▰</span>
+        <strong style={{ flex: 1, fontSize: 13 }}>{folder.name}</strong>
+        <button type="button" onClick={onClose} aria-label="Close folder details" style={{ color: "#a5f3fc", border: 0, background: "none", cursor: "pointer", fontSize: 19 }}>×</button>
+      </header>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16 }}>
+        <p style={{ margin: 0, color: "rgba(240,237,232,.8)", fontSize: 12, lineHeight: 1.55 }}>
+          {desktop
+            ? "Browse supported documents in this connected folder from the Apex Files workspace."
+            : "Laptop folders can only be opened by the installed Apex desktop app. This browser preview cannot access your computer's files."}
+        </p>
+        {desktop && (
+          <button
+            type="button"
+            onClick={onOpen}
+            style={{ border: "1px solid rgba(0,229,255,.42)", borderRadius: 8, padding: "9px 12px", color: "#a5f3fc", background: "rgba(0,229,255,.1)", cursor: "pointer", fontSize: 12 }}
+          >
+            Open in Files
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── The world ── */
 export default function ApexWorld() {
   const [selected, setSelected] = useState<NodeSel | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<MatrixFolder | null>(null);
+  const [desktop, setDesktop] = useState(false);
   const [reduced, setReduced] = useState(false);
 
   // A tap cycles idle → thinking → speaking → idle. That state drives the
@@ -238,6 +294,10 @@ export default function ApexWorld() {
   const [showState, setShowState] = useState<OrbState>("idle");
   const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const orbState: OrbState = showState;
+
+  useEffect(() => {
+    setDesktop(Boolean(window.apexDesktop));
+  }, []);
 
   const boost = () => {
     const next: OrbState = showState === "idle" ? "thinking" : showState === "thinking" ? "speaking" : "idle";
@@ -249,8 +309,19 @@ export default function ApexWorld() {
 
   // Single entry point for opening an agent, shared by the SVG graph and the
   // hidden accessible list, so both routes behave identically.
-  const openAgent = (n: NodeSel) => {
+  const openNode = (n: NodeSel) => {
+    if (n.key.startsWith("folder:")) {
+      const folder = MATRIX_FOLDERS.find((item) => `folder:${item.id}` === n.key);
+      if (folder) setSelectedFolder(folder);
+      return;
+    }
     setSelected(n);
+  };
+
+  const openFolderInFiles = () => {
+    if (!selectedFolder || !desktop) return;
+    window.dispatchEvent(new CustomEvent("apex:open-folder", { detail: { shortcutId: selectedFolder.id } }));
+    setSelectedFolder(null);
   };
 
   useEffect(() => {
@@ -302,7 +373,8 @@ export default function ApexWorld() {
           state={webState}
           mode="full"
           coreless
-          onSelect={(n: NodeSel) => { openAgent(n); }}
+          extraNodes={MATRIX_FOLDER_NODES}
+          onSelect={(n: NodeSel) => { openNode(n); }}
         />
       </div>
 
@@ -311,8 +383,19 @@ export default function ApexWorld() {
         <ul>
           {ROSTER.map((a) => (
             <li key={a.key}>
-              <button type="button" onClick={() => openAgent({ key: a.key, name: a.name, color: a.color })}>
+              <button type="button" onClick={() => openNode({ key: a.key, name: a.name, color: a.color })}>
                 {a.name} - {INFO[a.key]?.role ?? "Specialist"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <nav className="visually-hidden" aria-label="Apex folders">
+        <ul>
+          {MATRIX_FOLDERS.map((folder) => (
+            <li key={folder.id}>
+              <button type="button" onClick={() => openNode({ key: `folder:${folder.id}`, name: folder.name, color: "#a5f3fc" })}>
+                Open {folder.name} folder
               </button>
             </li>
           ))}
@@ -344,6 +427,14 @@ export default function ApexWorld() {
       <OrbStatusBar state={orbState} />
 
       {selected && <AgentOverview sel={selected} onClose={() => setSelected(null)} />}
+      {selectedFolder && (
+        <FolderNodeOverview
+          folder={selectedFolder}
+          desktop={desktop}
+          onOpen={openFolderInFiles}
+          onClose={() => setSelectedFolder(null)}
+        />
+      )}
     </div>
   );
 }

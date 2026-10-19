@@ -1,5 +1,6 @@
 import ApexWorld from "@/components/ApexWorld";
 import ApexOverviewPanel from "@/components/ApexOverviewPanel";
+import ApexChat from "@/components/ApexChat";
 
 export default function Home() {
   return (
@@ -9,6 +10,7 @@ export default function Home() {
     >
       {/* Top-left overview HUD: clock + weather + social links */}
       <ApexOverviewPanel />
+      <ApexChat />
 
       {/* The world: orb core + orbiting agent graph. Tap the orb to cycle its
           state; click any agent node to open its overview card. */}

@@ -3,7 +3,7 @@
 /**
  * OVERVIEW lamp panel - same design as the Apex app's top-left HUD
  * (OverviewMode.jsx): glowing filament line + sliding node + "OVERVIEW"
- * label, live clock/date and Tel-Aviv weather (open-meteo, same endpoint
+ * label, live clock/date and Paarl, South Africa weather (Open-Meteo, same endpoint
  * as the app).
  *
  * Clicking the lamp opens the tiles. They are deliberately three different
@@ -30,7 +30,14 @@ const TILES: Tile[] = [
 
 function Clock() {
   const [now, setNow] = useState<Date | null>(null);
-  const [wx, setWx] = useState<{ temp: number | null; code: number | null; city: string } | null>(null);
+  const [wx, setWx] = useState<{
+    temp: number | null;
+    code: number | null;
+    humidity: number | null;
+    wind: number | null;
+    city: string;
+    error?: string;
+  } | null>(null);
 
   useEffect(() => {
     setNow(new Date());
@@ -40,13 +47,32 @@ function Clock() {
 
   useEffect(() => {
     let ok = true;
-    // Via our own API route, so open-meteo never sees visitor IPs. The route
-    // returns the visitor's own city + weather (Vercel geo headers).
     const load = () =>
       fetch("/api/weather")
-        .then((r) => r.json())
-        .then((d) => { if (ok) setWx({ temp: d.current?.temperature_2m ?? null, code: d.current?.weather_code ?? null, city: d.city || "your town" }); })
-        .catch(() => {});
+        .then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Weather is temporarily unavailable.");
+          return data;
+        })
+        .then((data) => {
+          if (ok) setWx({
+            temp: data.current?.temperature_2m ?? null,
+            code: data.current?.weather_code ?? null,
+            humidity: data.current?.relative_humidity_2m ?? null,
+            wind: data.current?.wind_speed_10m ?? null,
+            city: data.city || "Paarl",
+          });
+        })
+        .catch((cause: unknown) => {
+          if (ok) setWx({
+            temp: null,
+            code: null,
+            humidity: null,
+            wind: null,
+            city: "Paarl",
+            error: cause instanceof Error ? cause.message : "Weather is temporarily unavailable.",
+          });
+        });
     load();
     const id = setInterval(load, 1200000);
     return () => { ok = false; clearInterval(id); };
@@ -66,8 +92,16 @@ function Clock() {
         <div>
           <div style={{ fontSize: 22, fontWeight: 300, color: `${ACCENT}e6` }}>{wx.temp != null ? Math.round(wx.temp) + "°C" : "-"}</div>
           <div style={{ fontSize: 9.5, letterSpacing: "0.12em", color: "rgba(240,237,232,0.5)", marginTop: 2, textTransform: "uppercase" }}>
-            {(wx.city || "").toUpperCase()}{wx.city && wx.code != null ? " · " : ""}{wx.code != null ? (WCODE[wx.code] || "").toUpperCase() : ""}
+            {(wx.city || "PAARL").toUpperCase()}{wx.code != null ? ` · ${(WCODE[wx.code] || "WEATHER").toUpperCase()}` : ""}
           </div>
+          {wx.error ? (
+            <div role="status" style={{ maxWidth: 180, fontSize: 9, color: "rgba(240,237,232,.72)", marginTop: 4 }}>{wx.error}</div>
+          ) : (
+            <div style={{ fontSize: 9, color: "rgba(240,237,232,.7)", marginTop: 4 }}>
+              {wx.wind != null ? `Wind ${Math.round(wx.wind)} km/h` : ""}
+              {wx.humidity != null ? ` · ${Math.round(wx.humidity)}% humidity` : ""}
+            </div>
+          )}
         </div>
       )}
     </div>

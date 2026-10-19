@@ -33,6 +33,65 @@ npm run dev
 
 Then `npm run build` for a production build, or deploy to Vercel in one click.
 
+## Files and assistant
+
+The Apex workspace opens on **Files**, with the assistant in a separate tab. In the
+browser, the requested folder names are shown for orientation, but the browser cannot
+open folders on your laptop. Use the installed Windows desktop app to access them.
+
+The assistant uses OpenAI's `gpt-4.1-mini` through a server-side route. Set
+`OPENAI_API_KEY` in `.env.local` (never expose the key in browser code), then restart
+the dev server. The overview shows current weather for Paarl, South Africa. Browser
+replies use speech synthesis when supported; the Windows desktop app can use either
+an installed Windows voice or ElevenLabs.
+
+The file picker can open text files you choose. Their contents are sent to OpenAI
+only when you send a message while the file is attached. You can edit the selected
+text locally and explicitly save it; browsers that support the File System Access
+API ask for write permission, while other browsers download the edited copy. This
+web app does not have access to the whole laptop or control desktop applications.
+
+## Windows desktop app
+
+The Windows desktop version adds visible, clickable shortcuts for OneDrive, its
+Desktop and Documents folders, Downloads, and the `Church(copy)`, `NOSS`, and `KC`
+folders under Documents.
+It also offers an explicit filename search, starting with Downloads and those named
+folders before searching accessible drive folders. Matches appear while the search
+continues, and you can cancel it. Search does not follow directory links, skips
+folders Windows denies access to, and stops after 100,000 folders or two minutes.
+Apex supports opening `.txt`, `.md`, `.csv`,
+`.log`, `.json`, `.pdf`, `.docx`, and `.xlsx` files up to 10 MB; extracted text is
+limited to 20,000 characters. PDF and Office files are read-only in Apex, while
+plain-text edits require an explicit save confirmation. No file contents are sent
+to OpenAI unless you explicitly attach the file and send a chat message.
+
+The Apps list discovers shortcuts pinned to the Windows taskbar and in the user and
+shared Start menus, and detects Outlook Classic and Microsoft Store WhatsApp. It
+does not inspect running windows or read app contents. Other applications can be
+selected from their `.exe` file. Every launch, including voice-requested launches,
+requires a native Windows confirmation; Apex does not automate other apps.
+The matrix also includes clickable nodes for the seven folders above; selecting one
+opens it in the desktop Files workspace.
+
+In the desktop Assistant, press **Start voice**, speak, and press **Stop & send**.
+The recording is sent to OpenAI for transcription and submitted as a chat command;
+recording is not active in the background. Try “open folder Documents” or “launch
+Outlook.” Folder commands only open a connected folder in Files. The assistant reads
+a file only after you select it, and file contents are sent to OpenAI only when you
+attach the file and send a message.
+
+Install Node.js and npm, then run `npm install`. For development, run `npm run dev`
+in one terminal and `npm run desktop:dev` in another. To create the Windows
+installer, run `npm run desktop:build`; the installer is written to
+`dist-desktop/`. The desktop app asks for your OpenAI key in **Settings** and
+stores it encrypted with Windows secure storage. In **Settings**, connect
+ElevenLabs with your own API key and voice ID to use its generated audio for spoken
+replies; the key is encrypted with Windows secure storage. Spoken reply text is
+sent to ElevenLabs and may consume account credits. Without a connected key, Apex
+uses the Windows built-in speech voice locally. Use **Test voice** to check audio
+playback. Never put either API key in source code or share it in chat.
+
 ## What's inside
 
 | Piece | What it does |
@@ -62,9 +121,10 @@ respects `prefers-reduced-motion`.
 
 ## Not included (on purpose)
 
-This repo is the **UI only**. The production Apex page also has a spoken-voice layer and a
-"story" narrative — those are personal recordings and private copy, so they are intentionally
-left out. The orb stays fully interactive without them.
+The production Apex page's original voice pipeline, humanoid, personal recordings, and
+private story copy are not included. The optional Windows desktop build adds OpenAI chat
+and system speech synthesis, but does not include or control that separate production
+assistant.
 
 ## License
 

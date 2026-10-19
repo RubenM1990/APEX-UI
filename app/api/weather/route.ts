@@ -1,40 +1,27 @@
 import { NextResponse } from "next/server";
 
-/**
- * Weather for the *visitor's* location.
- *
- * On Vercel, the platform adds geo headers to every request
- * (`x-vercel-ip-latitude` / `-longitude` / `-city`) — no permission prompt, no
- * third-party service. We read those and fetch the weather from open-meteo
- * (free, keyless).
- *
- * When there are no geo headers (localhost / off Vercel), we DON'T invent a
- * city — we return `{ current: null, city: "your town" }`, and the panel shows
- * "your town" with a "-" temperature.
- */
-export const dynamic = "force-dynamic"; // per-visitor: reads geo headers
+export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const h = request.headers;
-  const lat = h.get("x-vercel-ip-latitude");
-  const lon = h.get("x-vercel-ip-longitude");
+const PAARL = { latitude: -33.73378, longitude: 18.97523 };
 
-  // No location available — don't guess.
-  if (!lat || !lon) {
-    return NextResponse.json({ current: null, city: "your town" });
-  }
-
-  const cityHeader = h.get("x-vercel-ip-city");
-  const city = cityHeader ? decodeURIComponent(cityHeader) : "your town";
+export async function GET() {
+  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude", String(PAARL.latitude));
+  url.searchParams.set("longitude", String(PAARL.longitude));
+  url.searchParams.set("timezone", "Africa/Johannesburg");
+  url.searchParams.set("current", "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m");
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`;
-    // Cache per-coordinate for 10 min so repeat visitors from the same city
-    // don't each trigger a fresh upstream call.
-    const r = await fetch(url, { next: { revalidate: 600 } });
-    const d = await r.json();
-    return NextResponse.json({ current: d.current ?? null, city });
+    const response = await fetch(url, { next: { revalidate: 600 }, signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) {
+      return NextResponse.json({ city: "Paarl", error: "Weather service is temporarily unavailable." }, { status: 502 });
+    }
+    const forecast = await response.json();
+    if (!forecast.current) {
+      return NextResponse.json({ city: "Paarl", error: "No current weather is available for Paarl." }, { status: 502 });
+    }
+    return NextResponse.json({ city: "Paarl", current: forecast.current });
   } catch {
-    return NextResponse.json({ current: null, city });
+    return NextResponse.json({ city: "Paarl", error: "Could not reach the weather service. Try again later." }, { status: 502 });
   }
 }
